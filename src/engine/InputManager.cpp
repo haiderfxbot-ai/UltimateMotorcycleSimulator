@@ -2,11 +2,9 @@
 
 InputManager::InputManager()
     : m_keyboardState(nullptr)
-    , m_quit(false)
     , m_gamepad(nullptr)
 {
     std::memset(m_prevKeyboardState, 0, sizeof(m_prevKeyboardState));
-    std::memset(m_axes, 0, sizeof(m_axes));
 
     for (int i = 0; i < SDL_NumJoysticks(); ++i) {
         if (SDL_IsGameController(i)) {
@@ -31,7 +29,7 @@ void InputManager::poll() {
     SDL_Event e;
     while (SDL_PollEvent(&e)) {
         if (e.type == SDL_QUIT) {
-            m_quit = true;
+            m_inputState.quit = true;
         }
         if (e.type == SDL_CONTROLLERDEVICEADDED && !m_gamepad) {
             m_gamepad = SDL_GameControllerOpen(e.cdevice.which);
@@ -42,13 +40,84 @@ void InputManager::poll() {
         }
     }
 
-    if (m_gamepad) {
-        m_axes[0] = SDL_GameControllerGetAxis(m_gamepad, SDL_CONTROLLER_AXIS_LEFTX) / 32767.0f;
-        m_axes[1] = SDL_GameControllerGetAxis(m_gamepad, SDL_CONTROLLER_AXIS_LEFTY) / 32767.0f;
-        m_axes[2] = SDL_GameControllerGetAxis(m_gamepad, SDL_CONTROLLER_AXIS_RIGHTX) / 32767.0f;
-        m_axes[3] = SDL_GameControllerGetAxis(m_gamepad, SDL_CONTROLLER_AXIS_RIGHTY) / 32767.0f;
-        m_axes[4] = SDL_GameControllerGetAxis(m_gamepad, SDL_CONTROLLER_AXIS_TRIGGERLEFT) / 32767.0f;
-        m_axes[5] = SDL_GameControllerGetAxis(m_gamepad, SDL_CONTROLLER_AXIS_TRIGGERRIGHT) / 32767.0f;
+    m_inputState.gearUp = false;
+    m_inputState.gearDown = false;
+    m_inputState.startEngine = false;
+    m_inputState.reset = false;
+
+    processKeyboard();
+    processGamepad();
+}
+
+void InputManager::processKeyboard() {
+    if (!m_keyboardState) return;
+
+    // Throttle
+    m_inputState.throttle = keyHeld(SDL_SCANCODE_W) || keyHeld(SDL_SCANCODE_UP) ? 1.0f : 0.0f;
+
+    // Rear brake
+    m_inputState.rearBrake = keyHeld(SDL_SCANCODE_S) || keyHeld(SDL_SCANCODE_DOWN) ? 1.0f : 0.0f;
+
+    // Front brake (space bar)
+    m_inputState.frontBrake = keyHeld(SDL_SCANCODE_SPACE) ? 1.0f : 0.0f;
+
+    // Clutch (left shift)
+    m_inputState.clutch = keyHeld(SDL_SCANCODE_LSHIFT) || keyHeld(SDL_SCANCODE_RSHIFT) ? 1.0f : 0.0f;
+
+    // Steer
+    m_inputState.steer = 0.0f;
+    if (keyHeld(SDL_SCANCODE_A) || keyHeld(SDL_SCANCODE_LEFT)) m_inputState.steer -= 1.0f;
+    if (keyHeld(SDL_SCANCODE_D) || keyHeld(SDL_SCANCODE_RIGHT)) m_inputState.steer += 1.0f;
+
+    // Gear up (Q / E)
+    if (keyPressed(SDL_SCANCODE_Q)) m_inputState.gearUp = true;
+    if (keyPressed(SDL_SCANCODE_E)) m_inputState.gearDown = true;
+
+    // Start engine
+    if (keyPressed(SDL_SCANCODE_RETURN) || keyPressed(SDL_SCANCODE_RCTRL)) m_inputState.startEngine = true;
+
+    // Reset
+    if (keyPressed(SDL_SCANCODE_R)) m_inputState.reset = true;
+
+    // Quit
+    if (keyPressed(SDL_SCANCODE_ESCAPE)) m_inputState.quit = true;
+}
+
+void InputManager::processGamepad() {
+    if (!m_gamepad) return;
+
+    float deadzone = 0.15f;
+
+    m_inputState.throttle = std::max(m_inputState.throttle,
+        std::max(0.0f, (SDL_GameControllerGetAxis(m_gamepad, SDL_CONTROLLER_AXIS_TRIGGERRIGHT) / 32767.0f)));
+
+    float lt = SDL_GameControllerGetAxis(m_gamepad, SDL_CONTROLLER_AXIS_TRIGGERLEFT) / 32767.0f;
+    m_inputState.clutch = std::max(m_inputState.clutch, lt);
+
+    float lx = SDL_GameControllerGetAxis(m_gamepad, SDL_CONTROLLER_AXIS_LEFTX) / 32767.0f;
+    if (std::abs(lx) > deadzone) {
+        m_inputState.steer = lx;
+    }
+
+    if (SDL_GameControllerGetButton(m_gamepad, SDL_CONTROLLER_BUTTON_A)) {
+        m_inputState.startEngine = true;
+    }
+    if (SDL_GameControllerGetButton(m_gamepad, SDL_CONTROLLER_BUTTON_B)) {
+        m_inputState.reset = true;
+    }
+    if (SDL_GameControllerGetButton(m_gamepad, SDL_CONTROLLER_BUTTON_LEFTSHOULDER)) {
+        m_inputState.frontBrake = 1.0f;
+    }
+    if (SDL_GameControllerGetButton(m_gamepad, SDL_CONTROLLER_BUTTON_RIGHTSHOULDER)) {
+        m_inputState.rearBrake = 1.0f;
+    }
+    if (SDL_GameControllerGetButton(m_gamepad, SDL_CONTROLLER_BUTTON_DPAD_UP) ||
+        SDL_GameControllerGetButton(m_gamepad, SDL_CONTROLLER_BUTTON_Y)) {
+        m_inputState.gearUp = true;
+    }
+    if (SDL_GameControllerGetButton(m_gamepad, SDL_CONTROLLER_BUTTON_DPAD_DOWN) ||
+        SDL_GameControllerGetButton(m_gamepad, SDL_CONTROLLER_BUTTON_X)) {
+        m_inputState.gearDown = true;
     }
 }
 
@@ -65,9 +134,4 @@ bool InputManager::keyHeld(SDL_Scancode code) const {
 bool InputManager::keyReleased(SDL_Scancode code) const {
     if (!m_keyboardState) return false;
     return !m_keyboardState[code] && m_prevKeyboardState[code];
-}
-
-float InputManager::axisValue(int axis) const {
-    if (axis >= 0 && axis < 6) return m_axes[axis];
-    return 0.0f;
 }

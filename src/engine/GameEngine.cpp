@@ -4,6 +4,7 @@
 #include "../renderer/Renderer.h"
 #include "../motorcycle/Motorcycle.h"
 #include "../world/World.h"
+#include <cstdio>
 
 #ifdef ANDROID
 #include <SDL.h>
@@ -50,6 +51,7 @@ bool GameEngine::init(int width, int height, const char* title) {
 
     m_bike->reset();
     m_camera->setTarget(&m_bike->position(), &m_bike->rotation());
+    m_camera->setAspect((float)width / (float)height);
     m_running = true;
     return true;
 }
@@ -91,28 +93,33 @@ void GameEngine::processInput() {
         m_running = false;
         return;
     }
-
-    if (m_input->keyPressed(SDL_SCANCODE_ESCAPE)) {
-        m_running = false;
-    }
 }
 
 void GameEngine::update(double dt) {
-    float throttle = 0.0f, brake = 0.0f, steer = 0.0f;
+    InputState state = m_input->getInputState();
 
-    if (m_input->keyHeld(SDL_SCANCODE_UP) || m_input->keyHeld(SDL_SCANCODE_W))
-        throttle = 1.0f;
-    if (m_input->keyHeld(SDL_SCANCODE_DOWN) || m_input->keyHeld(SDL_SCANCODE_S))
-        brake = 1.0f;
-    if (m_input->keyHeld(SDL_SCANCODE_LEFT) || m_input->keyHeld(SDL_SCANCODE_A))
-        steer = -1.0f;
-    if (m_input->keyHeld(SDL_SCANCODE_RIGHT) || m_input->keyHeld(SDL_SCANCODE_D))
-        steer = 1.0f;
-
-    if (m_input->keyPressed(SDL_SCANCODE_R))
+    if (state.reset) {
         m_bike->reset();
+    }
 
-    m_bike->update((float)dt, throttle, brake, steer);
+    if (state.startEngine && !m_bike->engineRunning()) {
+        m_bike->reset();
+        // Engine will start on next update cycle
+    }
+
+    m_bike->update(
+        (float)dt,
+        state.throttle,
+        state.rearBrake,
+        state.frontBrake,
+        state.steer,
+        state.clutch,
+        state.gearUp,
+        state.gearDown,
+        state.startEngine
+    );
+
+    m_camera->setTarget(&m_bike->position(), &m_bike->rotation());
     m_camera->update((float)dt);
 }
 
@@ -120,7 +127,15 @@ void GameEngine::render() {
     m_renderer->beginFrame();
     m_world->render(m_renderer, m_camera);
     m_bike->render(m_renderer, m_camera);
+    renderHUD();
     m_renderer->endFrame();
+}
+
+void GameEngine::renderHUD() {
+    // Simple HUD using OpenGL - bike stats overlay
+    (void)0;
+    // In a full implementation, we would render text here
+    // For now, stats are shown in the window title via FPS counter
 }
 
 void GameEngine::calculateFPS() {
@@ -130,8 +145,17 @@ void GameEngine::calculateFPS() {
         m_fps = m_frameCount;
         m_frameCount = 0;
         m_fpsTimer -= 1.0;
-        char buf[64];
-        snprintf(buf, sizeof(buf), "Ultimate Motorcycle Simulator - %d FPS", m_fps);
+
+        const Motorcycle* bike = m_bike;
+        char buf[128];
+        snprintf(buf, sizeof(buf), "Ultimate MC Sim Phase2 | FPS:%d Spd:%.0fkmh Gear:%d RPM:%.0f %s%s",
+            m_fps,
+            bike->speed() * 3.6f,
+            bike->gear(),
+            bike->rpm(),
+            bike->engineRunning() ? (bike->isStalled() ? "STALLED" : "RUN") : "OFF",
+            bike->isCrashed() ? " CRASHED" : "");
+
         SDL_SetWindowTitle(m_renderer->window(), buf);
     }
 }

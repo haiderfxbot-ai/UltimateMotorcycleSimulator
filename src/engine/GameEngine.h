@@ -8,6 +8,7 @@ class Renderer;
 class Motorcycle;
 class Camera;
 class World;
+struct InputState;
 
 class GameEngine {
 public:
@@ -22,17 +23,12 @@ public:
     double totalTime() const { return m_totalTime; }
     int fps() const { return m_fps; }
 
-    InputManager* input() const { return m_input; }
-    Renderer* renderer() const { return m_renderer; }
-    Motorcycle* bike() const { return m_bike; }
-    Camera* camera() const { return m_camera; }
-    World* world() const { return m_world; }
-
 private:
     void processInput();
     void update(double dt);
     void render();
     void calculateFPS();
+    void renderHUD();
 
     bool m_running;
     double m_deltaTime;

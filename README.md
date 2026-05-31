@@ -1,6 +1,36 @@
 # Ultimate Realistic Open World Motorcycle Simulator
 
-Phase 1: Core Prototype — basic motorcycle movement on a simple map.
+Phase 2: Motorcycle Realism System — realistic physics, gears, clutch, crashes.
+
+## Controls
+
+| Key               | Action         |
+|------------------|----------------|
+| W / Up Arrow     | Throttle       |
+| S / Down Arrow   | Rear Brake     |
+| Space            | Front Brake    |
+| Left Shift       | Clutch         |
+| A / Left Arrow   | Steer Left     |
+| D / Right Arrow  | Steer Right    |
+| Q                | Gear Up        |
+| E                | Gear Down      |
+| Enter / Ctrl     | Start Engine   |
+| R                | Reset Bike     |
+| ESC              | Quit           |
+
+## Gamepad
+
+| Input              | Action         |
+|-------------------|----------------|
+| Right Trigger     | Throttle       |
+| Left Trigger      | Clutch         |
+| Left Stick X      | Steer          |
+| LB                | Rear Brake     |
+| RB                | Front Brake    |
+| A / Y             | Start Engine   |
+| B                 | Reset Bike     |
+| D-Pad Up / Y      | Gear Up        |
+| D-Pad Down / X    | Gear Down      |
 
 ## Build
 
@@ -11,21 +41,20 @@ make -j$(nproc)
 ./UltimateMotorcycle
 ```
 
-## Controls
+## Phase 2 Systems
 
-| Key              | Action       |
-|------------------|-------------|
-| W / Up Arrow     | Accelerate  |
-| S / Down Arrow   | Brake       |
-| A / Left Arrow   | Steer Left  |
-| D / Right Arrow  | Steer Right |
-| R                | Reset Bike  |
-| ESC              | Quit        |
+- **Engine**: RPM, stall, rev limiter, temperature, fuel consumption
+- **Transmission**: 5-speed gearbox + neutral, manual clutch, half-clutch, gear clash
+- **Chassis**: Center of gravity, lean physics, low-speed wobble, high-speed stability
+- **Suspension**: Front/rear spring-damper, weight transfer, pothole response
+- **Tires**: Grip per surface, slip angle, lock-up, wheel spin
+- **Rider**: Ragdoll physics, 6-joint body, crash ejection, slide/flip physics
+- **Surface System**: Asphalt, wet road, gravel, dirt, mud, sand, grass, potholes
 
 ## Phases
 
-- Phase 1: Core prototype (this)
-- Phase 2: Motorcycle realism (gears, clutch, crashes)
+- Phase 1: Core prototype (done)
+- Phase 2: Motorcycle realism (current)
 - Phase 3: Environment build (city, traffic, weather)
 - Phase 4: Open world expansion
 - Phase 5: Multiplayer system

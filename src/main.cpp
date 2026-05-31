@@ -19,7 +19,7 @@ int main(int argc, char* argv[]) {
     }
 
     GameEngine engine;
-    if (!engine.init(1280, 720, "Ultimate Motorcycle Simulator - Phase 1")) {
+    if (!engine.init(1280, 720, "Ultimate Motorcycle Simulator - Phase 2")) {
         SDL_Log("Engine init failed");
         SDL_Quit();
         return 1;
