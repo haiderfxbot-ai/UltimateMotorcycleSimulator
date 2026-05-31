@@ -1,0 +1,14 @@
+build/
+*.o
+*.obj
+*.exe
+*.apk
+*.aab
+*.log
+*.swp
+.DS_Store
+Thumbs.db
+__pycache__/
+*.pyc
+.cache/
+out/

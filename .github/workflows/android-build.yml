@@ -1,0 +1,53 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main, development ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Android NDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r26d
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq cmake ninja-build xvfb
+
+      - name: Configure CMake for Android
+        run: |
+          mkdir -p build/android
+          cd build/android
+          cmake ../.. \
+            -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_HOME/build/cmake/android.toolchain.cmake \
+            -DANDROID_ABI=arm64-v8a \
+            -DANDROID_PLATFORM=android-24 \
+            -DCMAKE_BUILD_TYPE=Release \
+            -GNinja
+
+      - name: Build
+        run: |
+          cd build/android
+          ninja -j$(nproc)
+
+      - name: Package APK
+        run: |
+          mkdir -p artifacts
+          cp build/android/UltimateMotorcycle artifacts/UltimateMotorcycle-arm64-v8a
+          echo "Build complete - binary in artifacts/" > artifacts/README.txt
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-build
+          path: artifacts/
