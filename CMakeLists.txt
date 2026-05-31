@@ -53,6 +53,7 @@ file(GLOB_RECURSE ENGINE_SRC
     src/audio/*.cpp
     src/input/*.cpp
     src/collision/*.cpp
+    src/debug/*.cpp
 )
 
 set(ALL_SOURCES

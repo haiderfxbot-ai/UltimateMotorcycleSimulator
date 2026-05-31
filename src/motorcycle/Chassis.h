@@ -6,6 +6,7 @@
 struct SuspensionState {
     float travel = 0.0f;
     float velocity = 0.0f;
+    float acceleration = 0.0f;
     float force = 0.0f;
 };
 
