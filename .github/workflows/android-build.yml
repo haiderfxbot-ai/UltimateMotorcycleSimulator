@@ -40,40 +40,53 @@ jobs:
             -GNinja \
             -DFETCHCONTENT_QUIET=OFF
 
-      - name: Build
+      - name: Build native library (libmain.so)
         run: |
           cd build/android
           ninja -j$(nproc) 2>&1
 
-      - name: Prepare APK structure
-        if: success()
+      - name: Copy native library to app jniLibs
         run: |
-          echo "=== Build output ==="
-          find build/android -name "*.so" -o -name "libmain*" 2>/dev/null
-          ls -la build/android/ 2>/dev/null
-          mkdir -p apk/lib/arm64-v8a
-          # SDL2 Android expects libmain.so in apk/lib/arm64-v8a/
-          for src in \
-            build/android/libmain.so \
-            build/android/libUltimateMotorcycle.so \
-            build/android/libUltimateMotorcycle.so \
-            build/android/UltimateMotorcycle; do
-            if [ -f "$src" ]; then
-              cp "$src" apk/lib/arm64-v8a/libmain.so
-              echo "Copied: $src -> libmain.so"
-              break
-            fi
-          done
-          if [ ! -f apk/lib/arm64-v8a/libmain.so ]; then
-            echo "WARNING: No libmain.so found!"
-            find build/android -type f 2>/dev/null
-          fi
-          echo "=== APK structure ==="
-          find apk -type f
+          mkdir -p app/src/main/jniLibs/arm64-v8a
+          cp build/android/libmain.so app/src/main/jniLibs/arm64-v8a/libmain.so
+          echo "Copied libmain.so ($(stat -c%s app/src/main/jniLibs/arm64-v8a/libmain.so) bytes)"
 
-      - name: Upload build artifact
-        if: success()
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Android SDK
+        run: |
+          ANDROID_SDK=/usr/local/lib/android/sdk
+          echo "ANDROID_HOME=$ANDROID_SDK"
+          # Find sdkmanager
+          SDKMANAGER=$(find $ANDROID_SDK -name sdkmanager -type f 2>/dev/null | head -1)
+          if [ -n "$SDKMANAGER" ]; then
+            echo "Using sdkmanager: $SDKMANAGER"
+            yes | $SDKMANAGER --licenses 2>/dev/null || true
+          else
+            echo "sdkmanager not found, checking default paths..."
+            ls -la $ANDROID_SDK/ || true
+            ls -la $ANDROID_SDK/cmdline-tools/ 2>/dev/null || true
+          fi
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build debug APK with Gradle
+        run: |
+          gradle assembleDebug --no-daemon -p .
+        env:
+          ANDROID_HOME: /usr/local/lib/android/sdk
+          ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: android-build
-          path: apk/
+          name: app-debug
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error

@@ -1,0 +1,27 @@
+apply plugin: 'com.android.application'
+
+android {
+    namespace 'com.ultimatemotorcyclesimulator'
+    compileSdk 34
+    defaultConfig {
+        applicationId 'com.ultimatemotorcyclesimulator'
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName '1.0'
+    }
+    sourceSets {
+        main {
+            jniLibs.srcDirs = ['src/main/jniLibs']
+            assets.srcDirs = ['src/main/assets', '../../assets']
+        }
+    }
+    buildTypes {
+        debug {
+            debuggable true
+        }
+        release {
+            minifyEnabled false
+        }
+    }
+}
