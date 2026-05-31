@@ -1,4 +1,5 @@
 #include "TouchControls.h"
+#include "../engine/InputManager.h"
 #include "../renderer/Renderer.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <algorithm>
