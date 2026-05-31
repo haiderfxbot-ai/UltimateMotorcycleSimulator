@@ -44,6 +44,12 @@ extern "C" int main(int argc, char* argv[]) {
         __FILE__, __func__, __LINE__, "Engine initialized, entering main loop",
         nullptr, nullptr);
 
+    // Flush any stale events (e.g. lifecycle SDL_QUIT from activity creation)
+    {
+        SDL_Event flush;
+        while (SDL_PollEvent(&flush)) {}
+    }
+
     engine.run();
 
     debug::ErrorLogger::instance().dumpAll();
