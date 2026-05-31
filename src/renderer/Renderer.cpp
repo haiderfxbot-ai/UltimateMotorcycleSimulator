@@ -2,6 +2,8 @@
 #include "../engine/Camera.h"
 #include <cstdio>
 #include <cmath>
+#include <cstdlib>
+#include <glm/gtc/constants.hpp>
 
 static const char* VERTEX_SRC = R"(
 #version 300 es
@@ -442,10 +444,10 @@ bool Renderer::createGeometry() {
         int vertCount = m_rainCount * 2;
         float* rainData = new float[vertCount * 3];
         for (int i = 0; i < m_rainCount; ++i) {
-            float x = ((float)std::rand() / RAND_MAX - 0.5f) * 100.0f;
-            float y = (float)std::rand() / RAND_MAX * 30.0f;
-            float z = ((float)std::rand() / RAND_MAX - 0.5f) * 100.0f;
-            float len = 0.3f + (float)std::rand() / RAND_MAX * 0.5f;
+            float x = ((float)rand() / RAND_MAX - 0.5f) * 100.0f;
+            float y = (float)rand() / RAND_MAX * 30.0f;
+            float z = ((float)rand() / RAND_MAX - 0.5f) * 100.0f;
+            float len = 0.3f + (float)rand() / RAND_MAX * 0.5f;
             rainData[i*6]   = x;
             rainData[i*6+1] = y;
             rainData[i*6+2] = z;

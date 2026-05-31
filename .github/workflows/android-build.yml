@@ -7,6 +7,9 @@ on:
     branches: [ main ]
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -43,13 +46,26 @@ jobs:
           ninja -j$(nproc) 2>&1
 
       - name: Prepare APK structure
+        if: success()
         run: |
+          echo "=== Build output ==="
+          ls -la build/android/ 2>/dev/null || echo "No build output found"
           mkdir -p apk/lib/arm64-v8a
-          cp build/android/libUltimateMotorcycle.so apk/lib/arm64-v8a/libmain.so 2>/dev/null || \
-            cp build/android/UltimateMotorcycle apk/lib/arm64-v8a/libmain.so 2>/dev/null || true
-          ls -la build/android/ 2>/dev/null
+          # SDL2 Android expects libmain.so
+          if [ -f build/android/libUltimateMotorcycle.so ]; then
+            cp build/android/libUltimateMotorcycle.so apk/lib/arm64-v8a/libmain.so
+            echo "Copied libUltimateMotorcycle.so -> libmain.so"
+          elif [ -f build/android/UltimateMotorcycle ]; then
+            cp build/android/UltimateMotorcycle apk/lib/arm64-v8a/libmain.so
+            echo "Copied executable -> libmain.so"
+          else
+            echo "WARNING: No build artifact found"
+          fi
+          echo "=== APK structure ==="
+          find apk -type f
 
       - name: Upload build artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: android-build
