@@ -14,8 +14,8 @@ if(ANDROID)
         GIT_TAG release-2.32.10
         GIT_SHALLOW TRUE
     )
-    set(SDL2_SHARED ON CACHE BOOL "" FORCE)
-    set(SDL2_STATIC OFF CACHE BOOL "" FORCE)
+    set(SDL2_SHARED OFF CACHE BOOL "" FORCE)
+    set(SDL2_STATIC ON CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(SDL2)
 
     FetchContent_Declare(glm
@@ -31,7 +31,6 @@ if(ANDROID)
     find_library(log_LIBRARY log REQUIRED)
     find_library(android_LIBRARY android REQUIRED)
 
-    set(DEP_LIBS SDL2-shared ${GLESv2_LIBRARY} ${EGL_LIBRARY} ${log_LIBRARY} ${android_LIBRARY})
     set(DEP_INCS ${sdl2_SOURCE_DIR}/include ${glm_SOURCE_DIR})
 else()
     # --- Desktop: use system packages ---
@@ -63,7 +62,7 @@ set(ALL_SOURCES
 
 # --- Executable (desktop) / Shared library (Android) ---
 if(ANDROID)
-    add_library(${PROJECT_NAME} SHARED
+    add_library(${PROJECT_NAME} MODULE
         ${ALL_SOURCES}
     )
     set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -82,9 +81,19 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 )
 
 # --- Link libraries ---
-target_link_libraries(${PROJECT_NAME}
-    ${DEP_LIBS}
-)
+if(ANDROID)
+    target_link_libraries(${PROJECT_NAME}
+        SDL2-static
+        ${GLESv2_LIBRARY}
+        ${EGL_LIBRARY}
+        ${log_LIBRARY}
+        ${android_LIBRARY}
+    )
+else()
+    target_link_libraries(${PROJECT_NAME}
+        ${DEP_LIBS}
+    )
+endif()
 
 # --- Compiler flags ---
 if(ANDROID)
