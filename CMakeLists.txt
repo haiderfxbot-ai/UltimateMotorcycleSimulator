@@ -14,8 +14,8 @@ if(ANDROID)
         GIT_TAG release-2.32.10
         GIT_SHALLOW TRUE
     )
-    set(SDL2_SHARED OFF CACHE BOOL "" FORCE)
-    set(SDL2_STATIC ON CACHE BOOL "" FORCE)
+    set(SDL2_SHARED ON CACHE BOOL "" FORCE)
+    set(SDL2_STATIC OFF CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(SDL2)
 
     FetchContent_Declare(glm
@@ -83,13 +83,12 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 # --- Link libraries ---
 if(ANDROID)
     target_link_libraries(${PROJECT_NAME}
-        SDL2-static
+        "$<TARGET_FILE:SDL2-shared>"
         ${GLESv2_LIBRARY}
         ${EGL_LIBRARY}
         ${log_LIBRARY}
         ${android_LIBRARY}
     )
-    target_link_options(${PROJECT_NAME} PRIVATE -Wl,--no-warn-mismatch)
 else()
     target_link_libraries(${PROJECT_NAME}
         ${DEP_LIBS}
