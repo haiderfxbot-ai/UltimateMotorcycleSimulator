@@ -99,6 +99,8 @@ Renderer::Renderer()
 Renderer::~Renderer() { shutdown(); }
 
 GLuint Renderer::compileShader(GLenum type, const char* source) {
+    const char* typeName = (type == GL_VERTEX_SHADER) ? "vertex" : "fragment";
+    SDL_Log("Renderer::compileShader: compiling %s shader...", typeName);
     GLuint shader = glCreateShader(type);
     glShaderSource(shader, 1, &source, nullptr);
     glCompileShader(shader);
@@ -107,9 +109,11 @@ GLuint Renderer::compileShader(GLenum type, const char* source) {
     if (!success) {
         char log[512];
         glGetShaderInfoLog(shader, sizeof(log), nullptr, log);
-        SDL_Log("Shader compile error: %s", log);
+        SDL_Log("Shader compile error (%s): %s", typeName, log);
+        SDL_Log("Shader source:\n%s", source);
         return 0;
     }
+    SDL_Log("Renderer::compileShader: %s shader OK", typeName);
     return shader;
 }
 
@@ -153,15 +157,17 @@ bool Renderer::init(int width, int height, const char* title) {
     m_width = width;
     m_height = height;
 
+    SDL_Log("Renderer::init: setting GL attributes...");
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
 
+    SDL_Log("Renderer::init: creating window...");
     m_window = SDL_CreateWindow(
         title,
-        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+        SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
         width, height,
         SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN
     );
@@ -169,23 +175,39 @@ bool Renderer::init(int width, int height, const char* title) {
         SDL_Log("Window creation failed: %s", SDL_GetError());
         return false;
     }
+    SDL_Log("Renderer::init: window OK");
 
+    SDL_Log("Renderer::init: creating GL context...");
     m_glContext = SDL_GL_CreateContext(m_window);
     if (!m_glContext) {
         SDL_Log("GL context creation failed: %s", SDL_GetError());
         return false;
     }
+    SDL_Log("Renderer::init: GL context OK");
 
     SDL_GL_SetSwapInterval(1);
 
-    if (!loadShaders()) return false;
-    if (!createGeometry()) return false;
+    SDL_Log("Renderer::init: loading shaders...");
+    if (!loadShaders()) {
+        SDL_Log("Shader loading failed");
+        return false;
+    }
+    SDL_Log("Renderer::init: shaders OK");
 
+    SDL_Log("Renderer::init: creating geometry...");
+    if (!createGeometry()) {
+        SDL_Log("Geometry creation failed");
+        return false;
+    }
+    SDL_Log("Renderer::init: geometry OK");
+
+    SDL_Log("Renderer::init: enabling GL state...");
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
     glClearColor(0.53f, 0.81f, 0.92f, 1.0f);
 
+    SDL_Log("Renderer::init: DONE");
     return true;
 }
 

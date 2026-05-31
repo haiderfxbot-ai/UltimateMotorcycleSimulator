@@ -52,6 +52,7 @@ GameEngine::~GameEngine() {
 }
 
 bool GameEngine::init(int width, int height, const char* title) {
+    SDL_Log("GameEngine::init: creating subsystems...");
     m_input = new InputManager();
     m_renderer = new Renderer();
     m_bike = new Motorcycle();
@@ -62,28 +63,40 @@ bool GameEngine::init(int width, int height, const char* title) {
     m_touch = new TouchControls();
     m_collision = new WorldCollision();
     m_stateManager = new GameStateManager();
+    SDL_Log("GameEngine::init: subsystems created");
 
+    SDL_Log("GameEngine::init: initializing renderer...");
     if (!m_renderer->init(width, height, title)) {
         SDL_Log("Renderer initialization failed");
         return false;
     }
+    SDL_Log("GameEngine::init: renderer OK");
 
+    SDL_Log("GameEngine::init: initializing world...");
     if (!m_world->init(m_renderer)) {
         SDL_Log("World initialization failed");
         return false;
     }
+    SDL_Log("GameEngine::init: world OK");
 
+    SDL_Log("GameEngine::init: audio...");
     m_audio->init();
+    SDL_Log("GameEngine::init: HUD...");
     m_hud->init(width, height);
+    SDL_Log("GameEngine::init: touch...");
     m_touch->init(width, height);
     m_input->setTouchControls(m_touch);
+    SDL_Log("GameEngine::init: collision...");
     m_collision->init();
+    SDL_Log("GameEngine::init: state manager...");
     m_stateManager->init(width, height);
 
+    SDL_Log("GameEngine::init: finalizing...");
     m_bike->reset();
     m_camera->setTarget(&m_bike->position(), &m_bike->rotation());
     m_camera->setAspect((float)width / (float)height);
     m_running = true;
+    SDL_Log("GameEngine::init: DONE");
     return true;
 }
 
