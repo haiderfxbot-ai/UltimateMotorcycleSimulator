@@ -31,8 +31,8 @@ if(ANDROID)
     find_library(log_LIBRARY log REQUIRED)
     find_library(android_LIBRARY android REQUIRED)
 
-    set(DEP_LIBS SDL2::SDL2-shared ${GLESv2_LIBRARY} ${EGL_LIBRARY} ${log_LIBRARY} ${android_LIBRARY})
-    set(DEP_INCS ${SDL2_SOURCE_DIR}/include ${glm_SOURCE_DIR})
+    set(DEP_LIBS SDL2-shared ${GLESv2_LIBRARY} ${EGL_LIBRARY} ${log_LIBRARY} ${android_LIBRARY})
+    set(DEP_INCS ${glm_SOURCE_DIR})
 else()
     # --- Desktop: use system packages ---
     find_package(SDL2 REQUIRED)
@@ -63,7 +63,7 @@ set(ALL_SOURCES
 
 # --- Executable (desktop) / Shared library (Android) ---
 if(ANDROID)
-    add_library(${PROJECT_NAME} MODULE
+    add_library(${PROJECT_NAME} SHARED
         ${ALL_SOURCES}
     )
     set_target_properties(${PROJECT_NAME} PROPERTIES
