@@ -8,6 +8,7 @@
 #include <glm/gtc/constants.hpp>
 #include <cmath>
 #include <algorithm>
+#include <cstdio>
 
 HUD::HUD()
     : m_width(1280)

@@ -2,6 +2,7 @@
 #include "../input/TouchControls.h"
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 
 InputManager::InputManager()
     : m_keyboardState(nullptr)
