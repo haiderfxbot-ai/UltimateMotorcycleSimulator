@@ -69,7 +69,7 @@ void AudioManager::shutdown() {
 }
 
 float AudioManager::whiteNoise() {
-    return (float)rand() / RAND_MAX * 2.0f - 1.0f;
+    return (float)rand() * (1.0f / 32767.0f) * 2.0f - 1.0f;
 }
 
 void AudioManager::update(float dt, float rpm, float speed, float throttle,

@@ -35,12 +35,12 @@ if(ANDROID)
 else()
     # --- Desktop: use system packages ---
     find_package(SDL2 REQUIRED)
-    find_package(OpenGLES REQUIRED)
-    find_package(GLEW REQUIRED)
+    find_package(OpenGL REQUIRED)
+    #find_package(GLEW REQUIRED)
     find_package(glm REQUIRED)
 
-    set(DEP_LIBS ${SDL2_LIBRARIES} ${OPENGLES_LIBRARIES} ${GLEW_LIBRARIES})
-    set(DEP_INCS ${SDL2_INCLUDE_DIRS} ${OPENGLES_INCLUDE_DIRS} ${GLEW_INCLUDE_DIRS} ${GLM_INCLUDE_DIRS})
+    set(DEP_LIBS ${SDL2_LIBRARIES} ${OPENGL_LIBRARIES} )
+    set(DEP_INCS ${SDL2_INCLUDE_DIRS} ${OPENGL_INCLUDE_DIRS}  ${GLM_INCLUDE_DIRS})
 endif()
 
 # --- Source files ---
@@ -86,7 +86,7 @@ target_link_libraries(${PROJECT_NAME}
 
 # --- Compiler flags ---
 if(ANDROID)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DANDROID -Os -Wno-deprecated-declarations")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DANDROID -Os -fno-integrated-as -Wno-deprecated-declarations")
     target_link_options(${PROJECT_NAME} PRIVATE -Wl,--no-warn-mismatch)
 else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -Wall -Wextra")

@@ -38,6 +38,8 @@ public:
     float direction() const { return m_direction; }
 
     float getLength() const { return m_length; }
+    float getWidth() const { return m_width; }
+    float getHeight() const { return m_height; }
 
 private:
     void renderCar(Renderer* renderer, Camera* camera);
