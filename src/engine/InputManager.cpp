@@ -3,6 +3,7 @@
 InputManager::InputManager()
     : m_keyboardState(nullptr)
     , m_gamepad(nullptr)
+    , m_touchControls(nullptr)
 {
     std::memset(m_prevKeyboardState, 0, sizeof(m_prevKeyboardState));
 
@@ -38,12 +39,17 @@ void InputManager::poll() {
             SDL_GameControllerClose(m_gamepad);
             m_gamepad = nullptr;
         }
+        if (m_touchControls &&
+            (e.type == SDL_FINGERDOWN || e.type == SDL_FINGERUP || e.type == SDL_FINGERMOTION)) {
+            m_touchControls->processEvent(&e);
+        }
     }
 
     m_inputState.gearUp = false;
     m_inputState.gearDown = false;
     m_inputState.startEngine = false;
     m_inputState.reset = false;
+    m_inputState.honk = false;
 
     processKeyboard();
     processGamepad();
@@ -75,6 +81,9 @@ void InputManager::processKeyboard() {
 
     // Start engine
     if (keyPressed(SDL_SCANCODE_RETURN) || keyPressed(SDL_SCANCODE_RCTRL)) m_inputState.startEngine = true;
+
+    // Honk
+    if (keyPressed(SDL_SCANCODE_H)) m_inputState.honk = true;
 
     // Reset
     if (keyPressed(SDL_SCANCODE_R)) m_inputState.reset = true;
@@ -118,6 +127,10 @@ void InputManager::processGamepad() {
     if (SDL_GameControllerGetButton(m_gamepad, SDL_CONTROLLER_BUTTON_DPAD_DOWN) ||
         SDL_GameControllerGetButton(m_gamepad, SDL_CONTROLLER_BUTTON_X)) {
         m_inputState.gearDown = true;
+    }
+
+    if (SDL_GameControllerGetButton(m_gamepad, SDL_CONTROLLER_BUTTON_RIGHTSTICK)) {
+        m_inputState.honk = true;
     }
 }
 

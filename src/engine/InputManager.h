@@ -4,6 +4,8 @@
 #include <cstdint>
 #include <cstring>
 
+class TouchControls;
+
 #ifdef ANDROID
 #include <SDL.h>
 #else
@@ -21,6 +23,7 @@ struct InputState {
     bool startEngine = false;
     bool reset = false;
     bool quit = false;
+    bool honk = false;
 };
 
 class InputManager {
@@ -30,6 +33,7 @@ public:
 
     void poll();
     InputState getInputState() const { return m_inputState; }
+    void setTouchControls(TouchControls* tc) { m_touchControls = tc; }
 
     bool keyPressed(SDL_Scancode code) const;
     bool keyHeld(SDL_Scancode code) const;
@@ -41,6 +45,7 @@ private:
     void processGamepad();
 
     InputState m_inputState;
+    TouchControls* m_touchControls;
     const Uint8* m_keyboardState;
     Uint8 m_prevKeyboardState[SDL_NUM_SCANCODES];
 

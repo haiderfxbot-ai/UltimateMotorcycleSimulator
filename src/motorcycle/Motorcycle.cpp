@@ -94,6 +94,17 @@ void Motorcycle::reset() {
     if (m_rider) m_rider->reset();
 }
 
+void Motorcycle::triggerExternalCrash(float impactForce, const glm::vec3& impactVelocity) {
+    if (m_crashed) return;
+    m_crashed = true;
+    m_crashInfo.active = true;
+    m_crashInfo.velocity = impactVelocity;
+    m_crashInfo.position = m_position;
+    m_crashInfo.impactForce = impactForce;
+    m_velocity = impactVelocity;
+    m_speed = glm::length(impactVelocity);
+}
+
 void Motorcycle::update(float dt, float throttleInput, float brakeInput, float frontBrakeInput,
                         float steerInput, float clutchInput, bool gearUp, bool gearDown,
                         bool startEngine) {

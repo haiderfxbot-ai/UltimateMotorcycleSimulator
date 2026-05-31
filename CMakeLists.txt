@@ -16,6 +16,9 @@ file(GLOB_RECURSE ENGINE_SRC
     src/motorcycle/*.cpp
     src/world/*.cpp
     src/renderer/*.cpp
+    src/audio/*.cpp
+    src/input/*.cpp
+    src/collision/*.cpp
 )
 
 set(ALL_SOURCES
@@ -26,8 +29,6 @@ set(ALL_SOURCES
 # --- Executable ---
 add_executable(${PROJECT_NAME}
     ${ALL_SOURCES}
-    assets/shaders/vertex.glsl
-    assets/shaders/fragment.glsl
 )
 
 # --- Include directories ---

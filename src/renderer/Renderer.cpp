@@ -15,12 +15,14 @@ uniform mat4 uModel;
 
 out vec3 vNormal;
 out vec3 vFragPos;
+out float vFogDepth;
 
 void main() {
     vec4 worldPos = uModel * vec4(aPos, 1.0);
     vFragPos = worldPos.xyz;
     vNormal = mat3(transpose(inverse(uModel))) * aNormal;
     gl_Position = uPV * worldPos;
+    vFogDepth = gl_Position.z / gl_Position.w;
 }
 )";
 
@@ -29,19 +31,33 @@ static const char* FRAGMENT_SRC = R"(
 precision highp float;
 in vec3 vNormal;
 in vec3 vFragPos;
+in float vFogDepth;
 
 uniform vec3 uColor;
-uniform vec3 uLightDir = vec3(0.5, 0.8, 0.3);
+uniform vec3 uLightDir;
+uniform vec3 uAmbientColor;
+uniform float uAmbientIntensity;
+uniform float uSunIntensity;
+uniform float uFogDensity;
+uniform vec3 uFogColor;
+uniform float uRainIntensity;
+uniform float uTime;
 
 out vec4 fragColor;
 
 void main() {
     vec3 N = normalize(vNormal);
     vec3 L = normalize(uLightDir);
+
     float diff = max(dot(N, L), 0.0);
-    float ambient = 0.4;
-    float lighting = ambient + diff * 0.6;
-    fragColor = vec4(uColor * lighting, 1.0);
+    vec3 lighting = uAmbientColor * uAmbientIntensity + uColor * diff * uSunIntensity;
+    vec3 color = uColor * (uAmbientIntensity + diff * uSunIntensity);
+
+    float fogFactor = 1.0 - exp(-uFogDensity * uFogDensity * vFogDepth * vFogDepth);
+    fogFactor = clamp(fogFactor, 0.0, 1.0);
+    color = mix(color, uFogColor, fogFactor);
+
+    fragColor = vec4(color, 1.0);
 }
 )";
 
@@ -53,10 +69,17 @@ Renderer::Renderer()
     , m_program(0)
     , m_vao(0)
     , m_vbo(0)
-    , m_ibo(0)
     , m_uPV(-1)
     , m_uModel(-1)
     , m_uColor(-1)
+    , m_uLightDir(-1)
+    , m_uAmbientColor(-1)
+    , m_uAmbientIntensity(-1)
+    , m_uSunIntensity(-1)
+    , m_uFogDensity(-1)
+    , m_uFogColor(-1)
+    , m_uRainIntensity(-1)
+    , m_uTime(-1)
     , m_planeVAO(0)
     , m_planeVBO(0)
     , m_boxVAO(0)
@@ -65,6 +88,10 @@ Renderer::Renderer()
     , m_cylVAO(0)
     , m_cylVBO(0)
     , m_cylIndexCount(0)
+    , m_rainVAO(0)
+    , m_rainVBO(0)
+    , m_rainCount(200)
+    , m_rainTimer(0.0f)
 {}
 
 Renderer::~Renderer() { shutdown(); }
@@ -109,6 +136,14 @@ bool Renderer::loadShaders() {
     m_uPV = glGetUniformLocation(m_program, "uPV");
     m_uModel = glGetUniformLocation(m_program, "uModel");
     m_uColor = glGetUniformLocation(m_program, "uColor");
+    m_uLightDir = glGetUniformLocation(m_program, "uLightDir");
+    m_uAmbientColor = glGetUniformLocation(m_program, "uAmbientColor");
+    m_uAmbientIntensity = glGetUniformLocation(m_program, "uAmbientIntensity");
+    m_uSunIntensity = glGetUniformLocation(m_program, "uSunIntensity");
+    m_uFogDensity = glGetUniformLocation(m_program, "uFogDensity");
+    m_uFogColor = glGetUniformLocation(m_program, "uFogColor");
+    m_uRainIntensity = glGetUniformLocation(m_program, "uRainIntensity");
+    m_uTime = glGetUniformLocation(m_program, "uTime");
     return true;
 }
 
@@ -155,6 +190,18 @@ bool Renderer::init(int width, int height, const char* title) {
 void Renderer::beginFrame() {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glUseProgram(m_program);
+
+    // Set lighting uniforms once per frame
+    glUniform3fv(m_uLightDir, 1, &m_lighting.lightDir[0]);
+    glUniform3fv(m_uAmbientColor, 1, &m_lighting.ambientColor[0]);
+    glUniform1f(m_uAmbientIntensity, m_lighting.ambientIntensity);
+    glUniform1f(m_uSunIntensity, m_lighting.sunIntensity);
+    glUniform1f(m_uFogDensity, m_lighting.fogDensity);
+    glUniform3fv(m_uFogColor, 1, &m_lighting.fogColor[0]);
+    glUniform1f(m_uRainIntensity, m_lighting.rainIntensity);
+
+    m_rainTimer += 0.016f;
+    glUniform1f(m_uTime, m_rainTimer);
 }
 
 void Renderer::endFrame() {
@@ -162,6 +209,8 @@ void Renderer::endFrame() {
 }
 
 void Renderer::shutdown() {
+    if (m_rainVAO) glDeleteVertexArrays(1, &m_rainVAO);
+    if (m_rainVBO) glDeleteBuffers(1, &m_rainVBO);
     if (m_planeVAO) glDeleteVertexArrays(1, &m_planeVAO);
     if (m_planeVBO) glDeleteBuffers(1, &m_planeVBO);
     if (m_boxVAO) glDeleteVertexArrays(1, &m_boxVAO);
@@ -178,10 +227,16 @@ void Renderer::setProjectionView(const glm::mat4& pv) {
     glUniformMatrix4fv(m_uPV, 1, GL_FALSE, &pv[0][0]);
 }
 
+void Renderer::setLighting(const LightingUniforms& lighting) {
+    m_lighting = lighting;
+}
+
 void Renderer::drawTriangles(const Vertex* verts, int count, const glm::mat4& model, const glm::vec3& color) {
     glUniformMatrix4fv(m_uModel, 1, GL_FALSE, &model[0][0]);
     glUniform3fv(m_uColor, 1, &color[0]);
 
+    glBindVertexArray(m_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
     glBufferData(GL_ARRAY_BUFFER, count * sizeof(Vertex), verts, GL_DYNAMIC_DRAW);
 
     glEnableVertexAttribArray(0);
@@ -197,7 +252,6 @@ void Renderer::drawTriangles(const Vertex* verts, int count, const glm::mat4& mo
 void Renderer::drawPlane(const glm::mat4& model, const glm::vec3& color) {
     glUniformMatrix4fv(m_uModel, 1, GL_FALSE, &model[0][0]);
     glUniform3fv(m_uColor, 1, &color[0]);
-
     glBindVertexArray(m_planeVAO);
     glDrawArrays(GL_TRIANGLES, 0, 6);
     glBindVertexArray(0);
@@ -206,7 +260,6 @@ void Renderer::drawPlane(const glm::mat4& model, const glm::vec3& color) {
 void Renderer::drawBox(const glm::mat4& model, const glm::vec3& color) {
     glUniformMatrix4fv(m_uModel, 1, GL_FALSE, &model[0][0]);
     glUniform3fv(m_uColor, 1, &color[0]);
-
     glBindVertexArray(m_boxVAO);
     glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, 0);
     glBindVertexArray(0);
@@ -216,9 +269,93 @@ void Renderer::drawCylinder(const glm::mat4& model, const glm::vec3& color, floa
     (void)radius; (void)height; (void)segments;
     glUniformMatrix4fv(m_uModel, 1, GL_FALSE, &model[0][0]);
     glUniform3fv(m_uColor, 1, &color[0]);
-
     glBindVertexArray(m_cylVAO);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, m_cylIndexCount);
+    glBindVertexArray(0);
+}
+
+void Renderer::drawSphere(const glm::mat4& model, const glm::vec3& color, int subdivisions) {
+    glUniformMatrix4fv(m_uModel, 1, GL_FALSE, &model[0][0]);
+    glUniform3fv(m_uColor, 1, &color[0]);
+
+    glBindVertexArray(m_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+    int stacks = subdivisions;
+    int slices = subdivisions;
+    int vertCount = (stacks + 1) * (slices + 1) * 6;
+    Vertex* verts = new Vertex[vertCount];
+    int idx = 0;
+
+    for (int i = 0; i < stacks; ++i) {
+        float phi1 = glm::pi<float>() * (float)i / (float)stacks;
+        float phi2 = glm::pi<float>() * (float)(i + 1) / (float)stacks;
+
+        for (int j = 0; j < slices; ++j) {
+            float theta1 = 2.0f * glm::pi<float>() * (float)j / (float)slices;
+            float theta2 = 2.0f * glm::pi<float>() * (float)(j + 1) / (float)slices;
+
+            glm::vec3 p00 = glm::vec3(sinf(phi1) * cosf(theta1), cosf(phi1), sinf(phi1) * sinf(theta1));
+            glm::vec3 p01 = glm::vec3(sinf(phi1) * cosf(theta2), cosf(phi1), sinf(phi1) * sinf(theta2));
+            glm::vec3 p10 = glm::vec3(sinf(phi2) * cosf(theta1), cosf(phi2), sinf(phi2) * sinf(theta1));
+            glm::vec3 p11 = glm::vec3(sinf(phi2) * cosf(theta2), cosf(phi2), sinf(phi2) * sinf(theta2));
+
+            verts[idx++] = { p00, glm::normalize(p00), glm::vec2(0.0f) };
+            verts[idx++] = { p10, glm::normalize(p10), glm::vec2(0.0f) };
+            verts[idx++] = { p01, glm::normalize(p01), glm::vec2(0.0f) };
+            verts[idx++] = { p01, glm::normalize(p01), glm::vec2(0.0f) };
+            verts[idx++] = { p10, glm::normalize(p10), glm::vec2(0.0f) };
+            verts[idx++] = { p11, glm::normalize(p11), glm::vec2(0.0f) };
+        }
+    }
+
+    glBufferData(GL_ARRAY_BUFFER, idx * sizeof(Vertex), verts, GL_DYNAMIC_DRAW);
+    glDrawArrays(GL_TRIANGLES, 0, idx);
+    delete[] verts;
+}
+
+void Renderer::drawCone(const glm::mat4& model, const glm::vec3& color, float radius, float height, int segments) {
+    glUniformMatrix4fv(m_uModel, 1, GL_FALSE, &model[0][0]);
+    glUniform3fv(m_uColor, 1, &color[0]);
+
+    glBindVertexArray(m_vao);
+    glBindBuffer(GL_ARRAY_BUFFER, m_vbo);
+    int vertCount = segments * 6;
+    Vertex* verts = new Vertex[vertCount];
+    int idx = 0;
+
+    glm::vec3 tip(0.0f, height, 0.0f);
+
+    for (int i = 0; i < segments; ++i) {
+        float a1 = 2.0f * glm::pi<float>() * (float)i / (float)segments;
+        float a2 = 2.0f * glm::pi<float>() * (float)(i + 1) / (float)segments;
+
+        glm::vec3 b1(radius * cosf(a1), 0.0f, radius * sinf(a1));
+        glm::vec3 b2(radius * cosf(a2), 0.0f, radius * sinf(a2));
+
+        // Side triangles
+        glm::vec3 n1 = glm::normalize(glm::cross(b1 - tip, b2 - b1));
+        verts[idx++] = { tip, n1, glm::vec2(0.0f) };
+        verts[idx++] = { b1, n1, glm::vec2(0.0f) };
+        verts[idx++] = { b2, n1, glm::vec2(0.0f) };
+
+        // Base triangles
+        verts[idx++] = { b1, glm::vec3(0.0f, -1.0f, 0.0f), glm::vec2(0.0f) };
+        verts[idx++] = { b2, glm::vec3(0.0f, -1.0f, 0.0f), glm::vec2(0.0f) };
+        verts[idx++] = { glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec2(0.0f) };
+    }
+
+    glBufferData(GL_ARRAY_BUFFER, idx * sizeof(Vertex), verts, GL_DYNAMIC_DRAW);
+    glDrawArrays(GL_TRIANGLES, 0, idx);
+    delete[] verts;
+}
+
+void Renderer::drawRainOverlay() {
+    if (m_lighting.rainIntensity < 0.05f) return;
+    glUniformMatrix4fv(m_uModel, 1, GL_FALSE, &glm::mat4(1.0f)[0][0]);
+    glUniform3fv(m_uColor, 1, &glm::vec3(0.6f, 0.7f, 0.9f)[0]);
+
+    glBindVertexArray(m_rainVAO);
+    glDrawArrays(GL_LINES, 0, m_rainCount * 2);
     glBindVertexArray(0);
 }
 
@@ -296,6 +433,34 @@ bool Renderer::createGeometry() {
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)0);
         glEnableVertexAttribArray(1);
         glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(sizeof(float)*3));
+        glBindVertexArray(0);
+    }
+
+    // --- Rain lines ---
+    {
+        m_rainCount = 400;
+        int vertCount = m_rainCount * 2;
+        float* rainData = new float[vertCount * 3];
+        for (int i = 0; i < m_rainCount; ++i) {
+            float x = ((float)std::rand() / RAND_MAX - 0.5f) * 100.0f;
+            float y = (float)std::rand() / RAND_MAX * 30.0f;
+            float z = ((float)std::rand() / RAND_MAX - 0.5f) * 100.0f;
+            float len = 0.3f + (float)std::rand() / RAND_MAX * 0.5f;
+            rainData[i*6]   = x;
+            rainData[i*6+1] = y;
+            rainData[i*6+2] = z;
+            rainData[i*6+3] = x - 0.1f * len;
+            rainData[i*6+4] = y - len;
+            rainData[i*6+5] = z + 0.05f * len;
+        }
+        glGenVertexArrays(1, &m_rainVAO);
+        glGenBuffers(1, &m_rainVBO);
+        glBindVertexArray(m_rainVAO);
+        glBindBuffer(GL_ARRAY_BUFFER, m_rainVBO);
+        glBufferData(GL_ARRAY_BUFFER, vertCount * 3 * sizeof(float), rainData, GL_STATIC_DRAW);
+        delete[] rainData;
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
         glBindVertexArray(0);
     }
 

@@ -8,6 +8,11 @@ class Renderer;
 class Motorcycle;
 class Camera;
 class World;
+class AudioManager;
+class HUD;
+class TouchControls;
+class WorldCollision;
+class GameStateManager;
 struct InputState;
 
 class GameEngine {
@@ -28,7 +33,6 @@ private:
     void update(double dt);
     void render();
     void calculateFPS();
-    void renderHUD();
 
     bool m_running;
     double m_deltaTime;
@@ -42,6 +46,11 @@ private:
     Motorcycle* m_bike;
     Camera* m_camera;
     World* m_world;
+    AudioManager* m_audio;
+    HUD* m_hud;
+    TouchControls* m_touch;
+    WorldCollision* m_collision;
+    GameStateManager* m_stateManager;
 };
 
 #endif

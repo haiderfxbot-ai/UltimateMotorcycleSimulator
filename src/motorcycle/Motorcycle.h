@@ -66,6 +66,7 @@ public:
 
     void setSurfaceGrip(float grip) { m_currentGrip = grip; }
     void setSurfaceHeight(float h) { m_surfaceHeight = h; }
+    void triggerExternalCrash(float impactForce, const glm::vec3& impactVelocity);
 
 private:
     void updatePhysics(float dt, float throttle, float brake, float frontBrake,
