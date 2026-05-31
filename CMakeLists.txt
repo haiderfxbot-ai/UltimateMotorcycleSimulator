@@ -14,8 +14,8 @@ if(ANDROID)
         GIT_TAG release-2.32.10
         GIT_SHALLOW TRUE
     )
-    set(SDL2_SHARED ON CACHE BOOL "" FORCE)
-    set(SDL2_STATIC OFF CACHE BOOL "" FORCE)
+    set(SDL_SHARED ON CACHE BOOL "" FORCE)
+    set(SDL_STATIC OFF CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(SDL2)
 
     FetchContent_Declare(glm
