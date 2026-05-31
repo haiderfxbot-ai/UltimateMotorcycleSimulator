@@ -1,6 +1,7 @@
 #include "Terrain.h"
 #include <cmath>
 #include <cstdlib>
+#include <algorithm>
 
 Terrain::Terrain()
     : m_seed(1234.5678f)

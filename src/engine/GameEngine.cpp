@@ -10,6 +10,8 @@
 #include "../world/RoadNetwork.h"
 #include "../world/TrafficVehicle.h"
 #include "../audio/AudioManager.h"
+#include <cmath>
+#include <algorithm>
 #include "../renderer/HUD.h"
 #include "../input/TouchControls.h"
 #include "../collision/WorldCollision.h"

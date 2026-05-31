@@ -10,6 +10,8 @@
 #include "../engine/Camera.h"
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/constants.hpp>
+#include <cmath>
+#include <algorithm>
 #include <cstdlib>
 #include <cmath>
 
