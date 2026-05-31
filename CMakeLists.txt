@@ -82,8 +82,12 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
 # --- Link libraries ---
 if(ANDROID)
+    # Ensure SDL2 build target is built before our library
+    add_dependencies(${PROJECT_NAME} SDL2-shared)
+    # Link against built libSDL2.so by directory (not target name) to avoid NDK target resolution bugs
+    target_link_directories(${PROJECT_NAME} PRIVATE "${sdl2_BINARY_DIR}")
     target_link_libraries(${PROJECT_NAME}
-        "$<TARGET_FILE:SDL2-shared>"
+        SDL2
         ${GLESv2_LIBRARY}
         ${EGL_LIBRARY}
         ${log_LIBRARY}
