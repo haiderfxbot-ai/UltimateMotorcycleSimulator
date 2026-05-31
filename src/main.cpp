@@ -4,11 +4,12 @@
 
 #ifdef ANDROID
 #include <SDL.h>
+#include <SDL_main.h>
 #else
 #include <SDL2/SDL.h>
 #endif
 
-int main(int argc, char* argv[]) {
+extern "C" int main(int argc, char* argv[]) {
     (void)argc; (void)argv;
 
     debug::ErrorLogger::instance().log(debug::Module::System, debug::Severity::Info,
