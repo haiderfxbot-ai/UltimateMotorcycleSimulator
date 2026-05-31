@@ -21,7 +21,7 @@ Camera::Camera()
     , m_projDirty(true)
 {}
 
-void Camera::setTarget(glm::vec3* pos, glm::vec3* rot) {
+void Camera::setTarget(const glm::vec3* pos, const glm::vec3* rot) {
     m_targetPos = pos;
     m_targetRot = rot;
 }

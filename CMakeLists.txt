@@ -3,6 +3,7 @@ project(UltimateMotorcycle VERSION 1.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+add_definitions(-DGLM_ENABLE_EXPERIMENTAL)
 
 if(ANDROID)
     # --- Android: download SDL2 + GLM from source ---

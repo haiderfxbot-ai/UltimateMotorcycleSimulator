@@ -7,7 +7,7 @@ class Camera {
 public:
     Camera();
 
-    void setTarget(glm::vec3* pos, glm::vec3* rot);
+    void setTarget(const glm::vec3* pos, const glm::vec3* rot);
     void update(float dt);
 
     glm::mat4 viewMatrix() const;
@@ -22,8 +22,8 @@ public:
 private:
     void rebuildProjection();
 
-    glm::vec3* m_targetPos;
-    glm::vec3* m_targetRot;
+    const glm::vec3* m_targetPos;
+    const glm::vec3* m_targetRot;
 
     glm::vec3 m_position;
     glm::vec3 m_forward;
