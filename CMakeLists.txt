@@ -26,7 +26,7 @@ if(ANDROID)
     FetchContent_MakeAvailable(glm)
 
     # OpenGLES from NDK
-    find_library(GLESv2_LIBRARY GLESv2 REQUIRED)
+    find_library(GLESv2_LIBRARY GLESv3 REQUIRED)
     find_library(EGL_LIBRARY EGL REQUIRED)
     find_library(log_LIBRARY log REQUIRED)
     find_library(android_LIBRARY android REQUIRED)
@@ -89,6 +89,7 @@ if(ANDROID)
         ${log_LIBRARY}
         ${android_LIBRARY}
     )
+    target_link_options(${PROJECT_NAME} PRIVATE -Wl,--no-warn-mismatch)
 else()
     target_link_libraries(${PROJECT_NAME}
         ${DEP_LIBS}
@@ -98,7 +99,6 @@ endif()
 # --- Compiler flags ---
 if(ANDROID)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DANDROID -Os -Wno-deprecated-declarations")
-    target_link_options(${PROJECT_NAME} PRIVATE -Wl,--no-warn-mismatch)
 else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2 -Wall -Wextra")
 endif()
