@@ -74,15 +74,24 @@ jobs:
         env:
           ANDROID_HOME: /usr/local/lib/android/sdk
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-
       - name: Build debug APK with Gradle
         run: |
-          gradle assembleDebug --no-daemon -p .
+          which gradle 2>/dev/null || echo "Gradle not in PATH"
+          # The runner has Gradle installed at /opt/gradle or via SDK
+          if command -v gradle &>/dev/null; then
+            gradle assembleDebug --no-daemon -p .
+          elif [ -x /opt/gradle/bin/gradle ]; then
+            /opt/gradle/bin/gradle assembleDebug --no-daemon -p .
+          else
+            # Download Gradle
+            wget -q "https://services.gradle.org/distributions/gradle-8.5-bin.zip" -O /tmp/gradle.zip
+            unzip -q /tmp/gradle.zip -d /opt
+            /opt/gradle-8.5/bin/gradle assembleDebug --no-daemon -p .
+          fi
         env:
           ANDROID_HOME: /usr/local/lib/android/sdk
           ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+          GRADLE_OPTS: "-Dorg.gradle.daemon=false"
 
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
